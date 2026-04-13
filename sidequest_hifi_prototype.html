@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sidequest — Hi-Fi Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --dark:#1A1A18;--light:#F9F8F5;--accent:#EF9F27;--muted:#888780;
+  --border:#E0DED7;--white:#FFFFFF;--card:#FFFFFF;
+  --green-bg:#EAF3DE;--green-text:#27500A;
+  --blue-bg:#E6F1FB;--blue-text:#0C447C;
+  --amber-bg:#FAEEDA;--amber-text:#633806;
+  --red-bg:#FCEBEB;--red-text:#A32D2D;
+  --purple-bg:#EEEDFE;--purple-text:#3C3489;
+  --teal-bg:#E1F5EE;--teal-text:#085041;
+  --f:'Plus Jakarta Sans',sans-serif;
+}
+body{font-family:var(--f);background:#2C2C2A;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:32px 16px 64px;}
+.proto-label{color:#888;font-size:12px;font-weight:500;letter-spacing:1px;text-transform:uppercase;margin-bottom:20px;}
+.phone{background:#111;border-radius:52px;padding:12px;width:390px;flex-shrink:0;box-shadow:0 60px 120px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.1);}
+.phone-bar{display:flex;justify-content:center;margin-bottom:8px;}
+.pill{width:126px;height:34px;background:#111;border-radius:20px;position:relative;display:flex;align-items:center;justify-content:center;gap:8px;}
+.pill-cam{width:12px;height:12px;background:#222;border-radius:50%;border:1px solid #333;}
+.pill-bar{width:3px;height:16px;background:#222;border-radius:2px;}
+.screen-wrap{width:366px;height:792px;background:var(--light);border-radius:42px;overflow:hidden;position:relative;}
+.status{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 0;font-size:12px;font-weight:700;position:absolute;top:0;left:0;right:0;z-index:20;pointer-events:none;}
+.screen{position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;overflow:hidden;}
+.screen.active{display:flex;}
+.sc-body{flex:1;overflow-y:auto;overflow-x:hidden;padding-top:38px;}
+.sc-body::-webkit-scrollbar{display:none;}
+
+/* Nav */
+.bnav{position:absolute;bottom:0;left:0;right:0;height:76px;background:var(--white);border-top:0.5px solid var(--border);display:flex;align-items:flex-start;padding-top:10px;z-index:10;}
+.nt{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+.ni{font-size:18px;line-height:1;}
+.nl{font-size:9px;font-weight:600;letter-spacing:0.3px;}
+.nt.on .ni,.nt.on .nl{color:var(--dark);}
+.nt:not(.on) .ni,.nt:not(.on) .nl{color:#C4C2BC;}
+
+/* Cards */
+.card{background:var(--white);border:0.5px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;}
+.card-sm{background:var(--white);border:0.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;}
+
+/* Buttons */
+.btn{width:100%;border:none;border-radius:14px;height:52px;font-size:15px;font-weight:700;font-family:var(--f);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s;}
+.btn:active{opacity:.85;}
+.btn-dark{background:var(--dark);color:var(--light);}
+.btn-outline{background:transparent;color:var(--dark);border:0.5px solid var(--border);height:48px;font-size:14px;font-weight:500;}
+.btn-accent{background:var(--accent);color:var(--dark);}
+
+/* Chips */
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{border-radius:20px;padding:7px 16px;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;flex-shrink:0;}
+.chip.on{background:var(--dark);color:var(--light);}
+.chip.off{background:var(--white);color:var(--dark);border:0.5px solid var(--border);}
+
+/* Badges */
+.bdg{border-radius:8px;padding:3px 10px;font-size:11px;font-weight:700;display:inline-block;}
+.bdg-dark{background:var(--dark);color:var(--light);}
+.bdg-amber{background:var(--amber-bg);color:var(--amber-text);}
+.bdg-green{background:var(--green-bg);color:var(--green-text);}
+.bdg-blue{background:var(--blue-bg);color:var(--blue-text);}
+.bdg-red{background:var(--red-bg);color:var(--red-text);}
+.bdg-purple{background:var(--purple-bg);color:var(--purple-text);}
+
+/* Rows */
+.row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:0.5px solid #F5F3EE;}
+.row:last-child{border-bottom:none;padding-bottom:0;}
+.rl{font-size:13px;color:var(--muted);}
+.rv{font-size:13px;font-weight:600;color:var(--dark);}
+
+/* Search bar */
+.search{background:#F0EEE8;border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.search-icon{font-size:14px;color:var(--muted);}
+.search-text{font-size:13px;color:var(--muted);}
+
+/* Back */
+.back{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);cursor:pointer;padding:16px 20px 0;font-family:var(--f);}
+.back-arrow{font-size:20px;line-height:1;margin-top:-2px;}
+
+/* Section label */
+.slabel{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:10px;}
+
+/* Event cover image */
+.cover{height:180px;border-radius:16px;display:flex;align-items:flex-end;padding:14px;margin-bottom:0;position:relative;overflow:hidden;}
+.cover-overlay{position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(transparent,rgba(0,0,0,0.55));}
+.cover-badge{position:relative;z-index:1;}
+
+/* Energy squares */
+.energy{display:flex;gap:4px;}
+.esq{width:14px;height:14px;border-radius:3px;}
+.esq.on{background:var(--dark);}
+.esq.off{background:var(--border);}
+
+/* Divider */
+.divider{height:0.5px;background:var(--border);margin:12px 0;}
+
+/* Toggle */
+.toggle{width:44px;height:26px;border-radius:13px;position:relative;cursor:pointer;flex-shrink:0;}
+.toggle.on{background:var(--dark);}
+.toggle.off{background:var(--border);}
+.toggle-thumb{position:absolute;top:3px;width:20px;height:20px;background:white;border-radius:50%;transition:left .2s;}
+.toggle.on .toggle-thumb{left:21px;}
+.toggle.off .toggle-thumb{left:3px;}
+
+/* Skeleton */
+.skel{background:#E8E6DF;border-radius:4px;animation:pulse 1.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+
+/* Input */
+input[type=range]{width:100%;-webkit-appearance:none;height:4px;border-radius:2px;background:var(--border);outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--dark);cursor:pointer;}
+
+/* Notification dot */
+.notif-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;display:inline-block;}
+
+/* Star */
+.stars{display:flex;gap:6px;}
+.star{font-size:28px;cursor:pointer;color:var(--accent);}
+.star.off{color:var(--border);}
+
+/* Checklist item */
+.check-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:0.5px solid #F5F3EE;}
+.check-circle{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.check-circle.done{background:var(--dark);}
+.check-circle.todo{border:1.5px solid var(--border);}
+.check-text{font-size:14px;}
+.check-text.done{color:var(--muted);text-decoration:line-through;}
+.check-text.todo{color:var(--dark);font-weight:500;}
+
+/* Cover gradients */
+.cov1{background:linear-gradient(135deg,#1a0533 0%,#3d0d5e 50%,#6b1a7a 100%);}
+.cov2{background:linear-gradient(135deg,#0d2233 0%,#0f3d4a 50%,#1a6678 100%);}
+.cov3{background:linear-gradient(135deg,#1a0e00 0%,#3d2200 50%,#5c3a0a 100%);}
+.cov4{background:linear-gradient(135deg,#001a0d 0%,#0a3320 50%,#1a5c3a 100%);}
+
+/* Profile avatar */
+.avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-family:var(--f);}
+
+/* Transition */
+.screen{transition:opacity .2s;}
+</style>
+</head>
+<body>
+
+<div class="proto-label">Sidequest · Hi-Fi Prototype · 20 Screens</div>
+
+<div class="phone">
+  <div class="phone-bar">
+    <div class="pill"><div class="pill-cam"></div><div class="pill-bar"></div></div>
+  </div>
+  <div class="screen-wrap">
+
+    <!-- STATUS BARS -->
+    <div class="status" id="status-light" style="color:#1A1A18;">
+      <span>9:41</span><span style="font-size:11px;letter-spacing:0.5px;">●●● 88%</span>
+    </div>
+    <div class="status" id="status-dark" style="color:#F9F8F5;display:none;">
+      <span>9:41</span><span style="font-size:11px;letter-spacing:0.5px;">●●● 88%</span>
+    </div>
+
+    <!-- ======= SCREEN 1: SPLASH ======= -->
+    <div class="screen active" id="s1" style="background:var(--dark);">
+      <div class="sc-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px 32px;background:var(--dark);">
+        <div style="width:88px;height:88px;border:2px solid rgba(255,255,255,0.2);border-radius:24px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;background:rgba(255,255,255,0.05);">
+          <span style="font-size:22px;font-weight:800;color:var(--light);letter-spacing:1px;">SQ</span>
+        </div>
+        <div style="font-size:32px;font-weight:800;color:var(--light);margin-bottom:10px;letter-spacing:-0.5px;">Sidequest</div>
+        <div style="font-size:15px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.6;margin-bottom:64px;max-width:260px;">Know the real cost of going out — before you commit.</div>
+        <button class="btn btn-accent" onclick="show('s2')" style="width:100%;margin-bottom:12px;">Get started</button>
+        <button class="btn btn-outline" style="color:rgba(255,255,255,0.5);border-color:rgba(255,255,255,0.15);width:100%;background:transparent;">Sign in</button>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 2: LOCATION ======= -->
+    <div class="screen" id="s2">
+      <div class="sc-body" style="padding:48px 24px 32px;">
+        <div style="width:64px;height:64px;background:var(--blue-bg);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;font-size:28px;">📍</div>
+        <div style="font-size:26px;font-weight:800;color:var(--dark);margin-bottom:10px;letter-spacing:-0.5px;">Enable location</div>
+        <div style="font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:28px;">Sidequest uses your location to find nearby events and calculate real transport costs before you commit.</div>
+        <div class="card" style="margin-bottom:28px;">
+          <div style="font-size:12px;font-weight:700;color:var(--dark);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;">What we use it for</div>
+          <div style="font-size:13px;color:var(--muted);line-height:2.1;">📍 &nbsp;Events near you<br/>🚇 &nbsp;Metro &amp; rideshare cost estimates<br/>⏱ &nbsp;Travel time to venue<br/>🔒 &nbsp;Never shared with third parties</div>
+        </div>
+        <button class="btn btn-dark" onclick="show('s3')" style="margin-bottom:12px;">Allow location access</button>
+        <button class="btn btn-outline" onclick="show('s3')">Not now</button>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 3: BUDGET SETUP ======= -->
+    <div class="screen" id="s3">
+      <div class="sc-body" style="padding:48px 24px 32px;">
+        <div style="display:flex;gap:6px;margin-bottom:32px;">
+          <div style="flex:1;height:4px;background:var(--dark);border-radius:2px;"></div>
+          <div style="flex:1;height:4px;background:var(--dark);border-radius:2px;"></div>
+          <div style="flex:1;height:4px;background:var(--border);border-radius:2px;"></div>
+        </div>
+        <div style="font-size:26px;font-weight:800;color:var(--dark);margin-bottom:8px;letter-spacing:-0.5px;">What's your night-out budget?</div>
+        <div style="font-size:14px;color:var(--muted);margin-bottom:40px;line-height:1.6;">We'll highlight events that fit. Change it anytime.</div>
+        <div style="text-align:center;margin-bottom:28px;">
+          <div style="font-size:56px;font-weight:800;color:var(--dark);letter-spacing:-2px;" id="budgetDisplay">$40</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px;">per night · all-in estimate</div>
+        </div>
+        <input type="range" min="10" max="150" value="40" style="margin-bottom:8px;" oninput="document.getElementById('budgetDisplay').textContent='$'+this.value"/>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:40px;font-weight:500;"><span>$10</span><span>$150+</span></div>
+        <div style="background:var(--amber-bg);border-radius:12px;padding:12px 16px;margin-bottom:28px;">
+          <div style="font-size:12px;color:var(--amber-text);font-weight:600;">Includes ticket + transport + drinks estimate</div>
+        </div>
+        <button class="btn btn-dark" onclick="show('s4')">Find my events →</button>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 4: HOME FEED ======= -->
+    <div class="screen" id="s4">
+      <div class="sc-body" style="padding:16px 20px 88px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;margin-top:6px;">
+          <div>
+            <div style="font-size:22px;font-weight:800;color:var(--dark);letter-spacing:-0.5px;">Good evening 👋</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:2px;">DTLA · Budget under $40</div>
+          </div>
+          <div class="avatar" style="width:40px;height:40px;background:var(--dark);color:var(--light);font-size:13px;">FR</div>
+        </div>
+        <div class="search"><span class="search-icon">🔍</span><span class="search-text">Search events in LA...</span></div>
+        <div class="chips" style="margin-bottom:16px;">
+          <div class="chip on">Tonight</div>
+          <div class="chip off" onclick="show('s5')">Under $30</div>
+          <div class="chip off">This weekend</div>
+          <div class="chip off">Metro only</div>
+          <div class="chip off">Casual</div>
+        </div>
+        <div class="slabel">Tonight · 3 events near you</div>
+        <!-- Event Card 1 -->
+        <div class="card" style="padding:0;overflow:hidden;cursor:pointer;" onclick="show('s8')">
+          <div class="cov1 cover" style="border-radius:14px 14px 0 0;margin:0;">
+            <div class="cover-overlay"></div>
+            <div class="cover-badge" style="display:flex;gap:6px;flex-wrap:wrap;">
+              <span class="bdg" style="background:rgba(255,255,255,0.15);color:white;backdrop-filter:blur(4px);">Themed</span>
+              <span class="bdg" style="background:var(--accent);color:var(--dark);">21+</span>
+            </div>
+          </div>
+          <div style="padding:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div style="flex:1;">
+                <div style="font-size:16px;font-weight:700;color:var(--dark);margin-bottom:3px;">Foam Party @ Exchange LA</div>
+                <div style="font-size:12px;color:var(--muted);">DTLA · Sat Jun 14, 10pm</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="bdg bdg-dark" style="font-size:13px;padding:5px 12px;margin-bottom:4px;">$34 all-in</div>
+                <div style="font-size:11px;color:var(--green-text);font-weight:600;">Metro available</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Event Card 2 -->
+        <div class="card" style="padding:0;overflow:hidden;cursor:pointer;" onclick="show('s8')">
+          <div class="cov2 cover" style="border-radius:14px 14px 0 0;margin:0;">
+            <div class="cover-overlay"></div>
+            <div class="cover-badge"><span class="bdg" style="background:rgba(255,255,255,0.15);color:white;">Chill</span></div>
+          </div>
+          <div style="padding:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div style="flex:1;">
+                <div style="font-size:16px;font-weight:700;color:var(--dark);margin-bottom:3px;">Rooftop Film Night</div>
+                <div style="font-size:12px;color:var(--muted);">Silver Lake · Sat Jun 21, 8pm</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="bdg bdg-dark" style="font-size:13px;padding:5px 12px;margin-bottom:4px;">$22 all-in</div>
+                <div style="font-size:11px;color:var(--green-text);font-weight:600;">Under budget ✓</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Event Card 3 -->
+        <div class="card" style="padding:0;overflow:hidden;cursor:pointer;" onclick="show('s8')">
+          <div class="cov3 cover" style="border-radius:14px 14px 0 0;margin:0;">
+            <div class="cover-overlay"></div>
+            <div class="cover-badge"><span class="bdg" style="background:rgba(255,255,255,0.15);color:white;">Business casual</span></div>
+          </div>
+          <div style="padding:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div style="flex:1;">
+                <div style="font-size:16px;font-weight:700;color:var(--dark);margin-bottom:3px;">Jazz at Culver Social</div>
+                <div style="font-size:12px;color:var(--muted);">Culver City · Sat Jun 14, 9pm</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="bdg" style="background:#F0EEE8;color:var(--muted);font-size:13px;padding:5px 12px;margin-bottom:4px;">$65 all-in</div>
+                <div style="font-size:11px;color:var(--amber-text);font-weight:600;">Over budget</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bnav">
+        <div class="nt on" onclick="show('s4')"><span class="ni">⊞</span><span class="nl">Home</span></div>
+        <div class="nt" onclick="show('s6')"><span class="ni">◈</span><span class="nl">Explore</span></div>
+        <div class="nt" onclick="show('s12')"><span class="ni">♡</span><span class="nl">Saved</span></div>
+        <div class="nt" onclick="show('s15')"><span class="ni">🔔</span><span class="nl">Alerts</span></div>
+        <div class="nt" onclick="show('s18')"><span class="ni">◉</span><span class="nl">Profile</span></div>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 5: FILTERED ======= -->
+    <div class="screen" id="s5">
+      <div class="sc-body" style="padding:16px 20px 88px;">
+        <div style="font-size:22px;font-weight:800;color:var(--dark);margin-bottom:16px;margin-top:6px;">Discover</div>
+        <div class="search" style="background:#F0EEE8;">
+          <span class="search-icon">🔍</span>
+          <span style="font-size:13px;color:var(--dark);flex:1;font-weight:500;">Under $30</span>
+          <span style="font-size:16px;color:var(--muted);cursor:pointer;" onclick="show('s4')">×</span>
+        </div>
+        <div class="chips" style="margin-bottom:14px;">
+          <div class="chip off">Tonight</div>
+          <div class="chip on">Under $30 ×</div>
+          <div class="chip off">Metro only</div>
+        </div>
+        <div style="background:var(--green-bg);border-radius:10px;padding:10px 14px;margin-bottom:14px;">
+          <span style="font-size:12px;color:var(--green-text);font-weight:600;">2 events match your budget tonight</span>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;cursor:pointer;" onclick="show('s8')">
+          <div class="cov2 cover" style="border-radius:14px 14px 0 0;margin:0;height:130px;">
+            <div class="cover-overlay"></div>
+            <div class="cover-badge"><span class="bdg" style="background:rgba(255,255,255,0.15);color:white;">Chill</span></div>
+          </div>
+          <div style="padding:14px;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-size:15px;font-weight:700;color:var(--dark);">Rooftop Film Night</div><div style="font-size:12px;color:var(--muted);">Silver Lake · Sat 8pm</div></div><div class="bdg bdg-dark" style="padding:5px 12px;">$22 all-in</div></div></div>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;cursor:pointer;" onclick="show('s8')">
+          <div class="cov4 cover" style="border-radius:14px 14px 0 0;margin:0;height:130px;">
+            <div class="cover-overlay"></div>
+            <div class="cover-badge"><span class="bdg" style="background:rgba(255,255,255,0.15);color:white;">Casual</span></div>
+          </div>
+          <div style="padding:14px;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-size:15px;font-weight:700;color:var(--dark);">R&amp;B Night Leimert Park</div><div style="font-size:12px;color:var(--muted);">Leimert Park · Sat 9pm</div></div><div class="bdg bdg-dark" style="padding:5px 12px;">$28 all-in</div></div></div>
+        </div>
+        <div onclick="show('s7')" style="text-align:center;font-size:13px;color:var(--muted);padding:16px;cursor:pointer;font-weight:500;">See all events (remove filter)</div>
+      </div>
+      <div class="bnav">
+        <div class="nt" onclick="show('s4')"><span class="ni">⊞</span><span class="nl">Home</span></div>
+        <div class="nt on" onclick="show('s6')"><span class="ni">◈</span><span class="nl">Explore</span></div>
+        <div class="nt" onclick="show('s12')"><span class="ni">♡</span><span class="nl">Saved</span></div>
+        <div class="nt" onclick="show('s15')"><span class="ni">🔔</span><span class="nl">Alerts</span></div>
+        <div class="nt" onclick="show('s18')"><span class="ni">◉</span><span class="nl">Profile</span></div>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 6: CATEGORIES ======= -->
+    <div class="screen" id="s6">
+      <div class="sc-body" style="padding:16px 20px 88px;">
+        <div style="font-size:22px;font-weight:800;color:var(--dark);margin-bottom:16px;margin-top:6px;">Browse by vibe</div>
+        <div class="search"><span class="search-icon">🔍</span><span class="search-text">Search categories...</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="card" style="cursor:pointer;" onclick="show('s5')"><div style="font-size:28px;margin-bottom:8px;">🎵</div><div style="font-size:14px;font-weight:700;color:var(--dark);">Music</div><div style="font-size:11px;color:var(--muted);">8 events</div></div>
+          <div class="card" style="cursor:pointer;" onclick="show('s5')"><div style="font-size:28px;margin-bottom:8px;">🎨</div><div style="font-size:14px;font-weight:700;color:var(--dark);">Art &amp; Gallery</div><div style="font-size:11px;color:var(--muted);">4 events</div></div>
+          <div class="card" style="cursor:pointer;" onclick="show('s5')"><div style="font-size:28px;margin-bottom:8px;">🍸</div><div style="font-size:14px;font-weight:700;color:var(--dark);">Food &amp; Drinks</div><div style="font-size:11px;color:var(--muted);">12 events</div></div>
+          <div class="card" style="cursor:pointer;" onclick="show('s5')"><div style="font-size:28px;margin-bottom:8px;">⚡</div><div style="font-size:14px;font-weight:700;color:var(--dark);">Themed Night</div><div style="font-size:11px;color:var(--muted);">6 events</div></div>
+          <div class="card" style="cursor:pointer;" onclick="show('s5')"><div style="font-size:28px;margin-bottom:8px;">🌆</div><div style="font-size:14px;font-weight:700;color:var(--dark);">Rooftop</div><div style="font-size:11px;color:var(--muted);">5 events</div></div>
+          <div class="card" style="cursor:pointer;" onclick="show('s5')"><div style="font-size:28px;margin-bottom:8px;">🎭</div><div style="font-size:14px;font-weight:700;color:var(--dark);">Comedy</div><div style="font-size:11px;color:var(--muted);">3 events</div></div>
+          <div class="card" style="cursor:pointer;" onclick="show('s5')"><div style="font-size:28px;margin-bottom:8px;">🏀</div><div style="font-size:14px;font-weight:700;color:var(--dark);">Sports</div><div style="font-size:11px;color:var(--muted);">4 events</div></div>
+          <div class="card" style="cursor:pointer;" onclick="show('s5')"><div style="font-size:28px;margin-bottom:8px;">🌿</div><div style="font-size:14px;font-weight:700;color:var(--dark);">Outdoor</div><div style="font-size:11px;color:var(--muted);">7 events</div></div>
+        </div>
+      </div>
+      <div class="bnav">
+        <div class="nt" onclick="show('s4')"><span class="ni">⊞</span><span class="nl">Home</span></div>
+        <div class="nt on"><span class="ni">◈</span><span class="nl">Explore</span></div>
+        <div class="nt" onclick="show('s12')"><span class="ni">♡</span><span class="nl">Saved</span></div>
+        <div class="nt" onclick="show('s15')"><span class="ni">🔔</span><span class="nl">Alerts</span></div>
+        <div class="nt" onclick="show('s18')"><span class="ni">◉</span><span class="nl">Profile</span></div>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 7: EMPTY STATE ======= -->
+    <div class="screen" id="s7">
+      <div class="sc-body" style="padding:16px 20px 88px;">
+        <div style="font-size:22px;font-weight:800;color:var(--dark);margin-bottom:16px;margin-top:6px;">Results</div>
+        <div class="chips" style="margin-bottom:20px;">
+          <div class="chip on">Metro only ×</div>
+          <div class="chip on">Under $20 ×</div>
+          <div class="chip on">Tonight ×</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;text-align:center;">
+          <div style="width:72px;height:72px;background:var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:20px;">🔍</div>
+          <div style="font-size:20px;font-weight:700;color:var(--dark);margin-bottom:10px;">No events found</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:28px;">Try removing a filter or expanding your budget to see more results.</div>
+          <button class="btn btn-dark" onclick="show('s4')" style="width:auto;padding:0 28px;height:48px;font-size:14px;">Clear all filters</button>
+        </div>
+      </div>
+      <div class="bnav">
+        <div class="nt" onclick="show('s4')"><span class="ni">⊞</span><span class="nl">Home</span></div>
+        <div class="nt on"><span class="ni">◈</span><span class="nl">Explore</span></div>
+        <div class="nt" onclick="show('s12')"><span class="ni">♡</span><span class="nl">Saved</span></div>
+        <div class="nt" onclick="show('s15')"><span class="ni">🔔</span><span class="nl">Alerts</span></div>
+        <div class="nt" onclick="show('s18')"><span class="ni">◉</span><span class="nl">Profile</span></div>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 8: EVENT REALITY CARD ★ ======= -->
+    <div class="screen" id="s8">
+      <div class="sc-body" style="padding:0 0 20px;">
+        <div style="position:relative;">
+          <div class="cov1" style="height:220px;border-radius:0;position:relative;">
+            <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(transparent 40%,rgba(0,0,0,0.7));"></div>
+            <div style="position:absolute;top:46px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:center;">
+              <div class="back" style="padding:0;color:rgba(255,255,255,0.8);" onclick="show('s4')"><span class="back-arrow">‹</span><span style="font-size:14px;">Back</span></div>
+              <div style="display:flex;gap:16px;">
+                <span style="font-size:22px;cursor:pointer;color:white;" onclick="show('s14')">♡</span>
+                <span style="font-size:20px;cursor:pointer;color:white;" onclick="show('s13')">⬆</span>
+              </div>
+            </div>
+            <div style="position:absolute;bottom:16px;left:20px;right:20px;">
+              <div style="font-size:22px;font-weight:800;color:white;margin-bottom:4px;letter-spacing:-0.3px;">Foam Party @ Exchange LA</div>
+              <div style="font-size:13px;color:rgba(255,255,255,0.7);">Exchange LA · DTLA · Sat Jun 14, 10pm</div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:0 20px;">
+          <div style="display:flex;gap:8px;padding:14px 0;flex-wrap:wrap;">
+            <span class="bdg bdg-purple">Themed</span>
+            <span class="bdg bdg-amber">21+</span>
+            <span class="bdg bdg-green">Card accepted</span>
+          </div>
+          <!-- Cost breakdown -->
+          <div class="card">
+            <div class="slabel">Cost breakdown</div>
+            <div class="row"><span class="rl">Ticket</span><span class="rv">$25.00</span></div>
+            <div class="row"><span class="rl">Transport (est.)</span><span style="font-size:13px;font-weight:600;color:var(--blue-text);text-decoration:underline;cursor:pointer;" onclick="show('s9')">$2.50 – $18 ›</span></div>
+            <div class="row"><span class="rl">Drinks (est.)</span><span class="rv">~$15–20</span></div>
+            <div style="height:0.5px;background:var(--border);margin:10px 0;"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:15px;font-weight:700;color:var(--dark);">Total estimate</span>
+              <span style="font-size:20px;font-weight:800;color:var(--dark);">$42–$63</span>
+            </div>
+            <div onclick="show('s9')" style="margin-top:12px;background:var(--green-bg);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+              <span style="font-size:13px;font-weight:600;color:var(--dark);">🚇 Metro available · $2.50</span>
+              <span class="bdg bdg-green" style="font-size:11px;">Cheapest</span>
+            </div>
+          </div>
+          <!-- Time commitment -->
+          <div class="card">
+            <div class="slabel">Time commitment</div>
+            <div class="row"><span class="rl">Travel time</span><span class="rv">~22 min</span></div>
+            <div class="row"><span class="rl">Event duration</span><span class="rv">4 hrs (10pm–2am)</span></div>
+            <div class="row"><span class="rl">Total night</span><span style="font-size:14px;font-weight:800;color:var(--dark);">~5 hrs</span></div>
+          </div>
+          <!-- Vibe & prep -->
+          <div class="card">
+            <div class="slabel">Vibe &amp; prep</div>
+            <div class="row">
+              <span class="rl">Energy level</span>
+              <div class="energy"><div class="esq on"></div><div class="esq on"></div><div class="esq on"></div><div class="esq off"></div><div class="esq off"></div></div>
+            </div>
+            <div class="row">
+              <span class="rl">Dress code</span>
+              <span class="bdg bdg-amber">⚠ White clothing</span>
+            </div>
+            <div onclick="show('s10')" style="margin-top:12px;background:#F9F8F5;border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;border:0.5px solid var(--border);">
+              <span style="font-size:13px;font-weight:600;color:var(--dark);">What to bring →</span>
+              <span style="font-size:12px;color:var(--muted);">4 items</span>
+            </div>
+          </div>
+          <!-- Recovery warning -->
+          <div style="background:var(--red-bg);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;">⚠️</span>
+            <span style="font-size:13px;color:var(--red-text);font-weight:500;">Ends 2am · High energy · Plan recovery time Sunday</span>
+          </div>
+          <button class="btn btn-dark" onclick="show('s14')" style="margin-bottom:10px;">Buy ticket — $25</button>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-outline" onclick="show('s14')" style="flex:1;">♡ Save</button>
+            <button class="btn btn-outline" onclick="show('s13')" style="flex:1;">⬆ Share</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 9: TRANSPORT ======= -->
+    <div class="screen" id="s9">
+      <div class="sc-body" style="padding:0 20px 32px;">
+        <div class="back" onclick="show('s8')"><span class="back-arrow">‹</span>Event card</div>
+        <div style="margin-top:14px;margin-bottom:4px;font-size:22px;font-weight:800;color:var(--dark);letter-spacing:-0.5px;">Transport options</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Foam Party · Exchange LA · DTLA</div>
+        <!-- Metro -->
+        <div class="card" style="border:1.5px solid var(--green-text);">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <div><div style="font-size:16px;font-weight:700;color:var(--dark);margin-bottom:3px;">🚇 Metro (Line E)</div><div style="font-size:12px;color:var(--muted);">Walk 3 min to 7th/Metro Station</div></div>
+            <div style="text-align:right;"><div style="font-size:20px;font-weight:800;color:var(--dark);">$2.50</div><div style="font-size:12px;color:var(--muted);">34 min</div></div>
+          </div>
+          <span class="bdg bdg-green">Cheapest option</span>
+        </div>
+        <!-- Uber -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div><div style="font-size:16px;font-weight:700;color:var(--dark);margin-bottom:3px;">🚗 Uber X</div><div style="font-size:12px;color:var(--muted);">Surge: low right now</div></div>
+            <div style="text-align:right;"><div style="font-size:20px;font-weight:800;color:var(--dark);">$14–18</div><div style="font-size:12px;color:var(--muted);">18 min</div></div>
+          </div>
+        </div>
+        <!-- Lyft -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div><div style="font-size:16px;font-weight:700;color:var(--dark);margin-bottom:3px;">🚗 Lyft</div><div style="font-size:12px;color:var(--muted);">Lyft XL also available</div></div>
+            <div style="text-align:right;"><div style="font-size:20px;font-weight:800;color:var(--dark);">$13–17</div><div style="font-size:12px;color:var(--muted);">18 min</div></div>
+          </div>
+        </div>
+        <!-- Waymo -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div><div style="font-size:16px;font-weight:700;color:var(--dark);margin-bottom:3px;">🤖 Waymo</div><div style="font-size:12px;color:var(--muted);">Available in this area</div></div>
+            <div style="text-align:right;"><div style="font-size:20px;font-weight:800;color:var(--dark);">$16–21</div><div style="font-size:12px;color:var(--muted);">20 min</div></div>
+          </div>
+        </div>
+        <!-- Surge warning -->
+        <div style="background:var(--amber-bg);border-radius:12px;padding:14px;margin-top:4px;">
+          <div style="font-size:12px;font-weight:700;color:var(--amber-text);margin-bottom:4px;">2am return surge alert</div>
+          <div style="font-size:13px;color:var(--amber-text);line-height:1.6;">Uber/Lyft typically surge +40% after 2am in DTLA. Book return before midnight to save ~$8.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 10: DRESS / BRING ======= -->
+    <div class="screen" id="s10">
+      <div class="sc-body" style="padding:0 20px 32px;">
+        <div class="back" onclick="show('s8')"><span class="back-arrow">‹</span>Event card</div>
+        <div style="margin-top:14px;margin-bottom:4px;font-size:22px;font-weight:800;color:var(--dark);letter-spacing:-0.5px;">What to bring</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">AI-extracted from event description</div>
+        <div style="background:var(--amber-bg);border-radius:14px;padding:16px;margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:700;color:var(--amber-text);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Dress code</div>
+          <div style="font-size:15px;font-weight:600;color:var(--dark);">White clothing required</div>
+          <div style="font-size:13px;color:var(--amber-text);margin-top:4px;">All white or majority white outfit required for entry</div>
+        </div>
+        <div style="background:var(--blue-bg);border-radius:14px;padding:16px;margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:700;color:var(--blue-text);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Theme / Props</div>
+          <div style="font-size:15px;font-weight:600;color:var(--dark);">Foam party</div>
+          <div style="font-size:13px;color:var(--blue-text);margin-top:4px;">Waterproof everything strongly recommended</div>
+        </div>
+        <div style="background:#F1EFE8;border-radius:14px;padding:16px;margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">ID &amp; Age</div>
+          <div style="font-size:15px;font-weight:600;color:var(--dark);">21+ with valid photo ID</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px;">Government-issued ID required at door</div>
+        </div>
+        <div style="background:var(--green-bg);border-radius:14px;padding:16px;margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:700;color:var(--green-text);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Payment</div>
+          <div style="font-size:15px;font-weight:600;color:var(--dark);">Card accepted · ATM on site</div>
+          <div style="font-size:13px;color:var(--green-text);margin-top:4px;">No cash minimum</div>
+        </div>
+        <div style="background:var(--amber-bg);border-radius:14px;padding:16px;">
+          <div style="font-size:10px;font-weight:700;color:var(--amber-text);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Phone</div>
+          <div style="font-size:15px;font-weight:600;color:var(--dark);">Waterproof case recommended</div>
+          <div style="font-size:13px;color:var(--amber-text);margin-top:4px;">Foam damages open ports and cameras</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 11: LOADING SKELETON ======= -->
+    <div class="screen" id="s11">
+      <div class="sc-body" style="padding:0 0 20px;">
+        <div style="height:220px;background:#E0DED7;"></div>
+        <div style="padding:14px 20px 0;">
+          <div style="display:flex;gap:8px;padding:14px 0;">
+            <div class="skel" style="width:80px;height:24px;border-radius:8px;"></div>
+            <div class="skel" style="width:60px;height:24px;border-radius:8px;"></div>
+          </div>
+          <div class="card">
+            <div class="skel" style="width:120px;height:12px;margin-bottom:16px;border-radius:3px;"></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid #F5F3EE;"><div class="skel" style="width:80px;height:10px;border-radius:3px;"></div><div class="skel" style="width:60px;height:10px;border-radius:3px;"></div></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid #F5F3EE;"><div class="skel" style="width:100px;height:10px;border-radius:3px;"></div><div class="skel" style="width:80px;height:10px;border-radius:3px;"></div></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;"><div class="skel" style="width:90px;height:10px;border-radius:3px;"></div><div class="skel" style="width:50px;height:10px;border-radius:3px;"></div></div>
+            <div style="height:0.5px;background:var(--border);margin:10px 0;"></div>
+            <div style="display:flex;justify-content:space-between;"><div class="skel" style="width:100px;height:16px;border-radius:3px;"></div><div class="skel" style="width:80px;height:20px;border-radius:3px;"></div></div>
+          </div>
+          <div class="card">
+            <div class="skel" style="width:120px;height:12px;margin-bottom:16px;border-radius:3px;"></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid #F5F3EE;"><div class="skel" style="width:80px;height:10px;border-radius:3px;"></div><div class="skel" style="width:60px;height:10px;border-radius:3px;"></div></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;"><div class="skel" style="width:100px;height:10px;border-radius:3px;"></div><div class="skel" style="width:70px;height:10px;border-radius:3px;"></div></div>
+          </div>
+          <div class="skel" style="width:100%;height:52px;border-radius:14px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 12: SAVED EVENTS ======= -->
+    <div class="screen" id="s12">
+      <div class="sc-body" style="padding:16px 20px 88px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;margin-top:6px;">
+          <div style="font-size:22px;font-weight:800;color:var(--dark);letter-spacing:-0.5px;">Saved events</div>
+          <span style="font-size:13px;color:var(--muted);font-weight:500;">3 saved</span>
+        </div>
+        <div class="slabel">Upcoming</div>
+        <div class="card" style="display:flex;gap:12px;cursor:pointer;" onclick="show('s8')">
+          <div class="cov1" style="width:56px;height:56px;border-radius:10px;flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:3px;">Foam Party @ Exchange LA</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Sat Jun 14 · 10pm</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;font-weight:700;color:var(--dark);">$42–$63</span><span class="bdg bdg-amber" style="font-size:10px;">This Saturday</span></div>
+          </div>
+        </div>
+        <div class="card" style="display:flex;gap:12px;cursor:pointer;" onclick="show('s8')">
+          <div class="cov2" style="width:56px;height:56px;border-radius:10px;flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:3px;">Rooftop Film Night</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Sat Jun 21 · 8pm</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;font-weight:700;color:var(--dark);">$22–$35</span><span class="bdg bdg-green" style="font-size:10px;">Next weekend</span></div>
+          </div>
+        </div>
+        <div class="card" style="display:flex;gap:12px;cursor:pointer;" onclick="show('s8')">
+          <div class="cov4" style="width:56px;height:56px;border-radius:10px;flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:3px;">R&amp;B Night Leimert Park</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Fri Jun 28 · 9pm</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;font-weight:700;color:var(--dark);">$28–$45</span><span class="bdg bdg-blue" style="font-size:10px;">Jun 28</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="bnav">
+        <div class="nt" onclick="show('s4')"><span class="ni">⊞</span><span class="nl">Home</span></div>
+        <div class="nt" onclick="show('s6')"><span class="ni">◈</span><span class="nl">Explore</span></div>
+        <div class="nt on"><span class="ni">♡</span><span class="nl">Saved</span></div>
+        <div class="nt" onclick="show('s15')"><span class="ni">🔔</span><span class="nl">Alerts</span></div>
+        <div class="nt" onclick="show('s18')"><span class="ni">◉</span><span class="nl">Profile</span></div>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 13: SHARE PREVIEW ======= -->
+    <div class="screen" id="s13">
+      <div class="sc-body" style="padding:20px 20px 32px;">
+        <div style="font-size:22px;font-weight:800;color:var(--dark);margin-bottom:4px;">Share this event</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Friends will see the full cost card</div>
+        <!-- Share card preview -->
+        <div style="background:var(--dark);border-radius:20px;padding:20px;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <div style="width:24px;height:24px;border:1.5px solid rgba(255,255,255,0.3);border-radius:8px;display:flex;align-items:center;justify-content:center;"><span style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.8);">SQ</span></div>
+            <span style="font-size:11px;color:rgba(255,255,255,0.5);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Sidequest</span>
+          </div>
+          <div style="font-size:18px;font-weight:700;color:white;margin-bottom:3px;">Foam Party @ Exchange LA</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:16px;">DTLA · Sat Jun 14, 10pm</div>
+          <div style="display:flex;gap:24px;">
+            <div><div style="font-size:18px;font-weight:800;color:white;">$42–63</div><div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;">All-in cost</div></div>
+            <div><div style="font-size:18px;font-weight:800;color:white;">5 hrs</div><div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;">Time</div></div>
+            <div><div style="font-size:18px;font-weight:800;color:var(--accent);">White</div><div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;">Dress code</div></div>
+          </div>
+        </div>
+        <!-- Share destinations -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
+            <div style="width:56px;height:56px;background:#DCF8C6;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;">💬</div>
+            <span style="font-size:10px;color:var(--muted);font-weight:500;">iMessage</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
+            <div style="width:56px;height:56px;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;">📷</div>
+            <span style="font-size:10px;color:var(--muted);font-weight:500;">Instagram</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
+            <div style="width:56px;height:56px;background:var(--blue-bg);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;">🔗</div>
+            <span style="font-size:10px;color:var(--muted);font-weight:500;">Copy link</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
+            <div style="width:56px;height:56px;background:#F1EFE8;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;">✉️</div>
+            <span style="font-size:10px;color:var(--muted);font-weight:500;">Email</span>
+          </div>
+        </div>
+        <button class="btn btn-outline" onclick="show('s8')">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 14: SAVED CONFIRMATION ======= -->
+    <div class="screen" id="s14">
+      <div class="sc-body" style="padding:0;background:var(--light);">
+        <!-- Blurred background content -->
+        <div style="padding:20px;opacity:0.2;pointer-events:none;">
+          <div style="font-size:18px;font-weight:700;color:var(--dark);">Foam Party @ Exchange LA</div>
+          <div style="height:1px;background:var(--border);margin:16px 0;"></div>
+          <div class="skel" style="width:90%;height:10px;margin-bottom:10px;border-radius:3px;"></div>
+          <div class="skel" style="width:70%;height:10px;margin-bottom:10px;border-radius:3px;"></div>
+          <div class="skel" style="width:80%;height:10px;border-radius:3px;"></div>
+        </div>
+        <!-- Bottom sheet -->
+        <div style="background:var(--white);border-radius:28px 28px 0 0;padding:28px 24px 40px;margin-top:20px;border-top:0.5px solid var(--border);">
+          <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 24px;"></div>
+          <div style="text-align:center;margin-bottom:24px;">
+            <div style="width:56px;height:56px;background:var(--green-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px;">✅</div>
+            <div style="font-size:20px;font-weight:800;color:var(--dark);margin-bottom:6px;">Saved to your events</div>
+            <div style="font-size:14px;color:var(--muted);">Foam Party @ Exchange LA · Sat Jun 14</div>
+          </div>
+          <div style="background:var(--amber-bg);border-radius:14px;padding:16px;margin-bottom:20px;">
+            <div style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:6px;">Set a reminder?</div>
+            <div style="font-size:12px;color:var(--amber-text);margin-bottom:14px;line-height:1.6;">We'll remind you about dress code and transport options.</div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-dark" style="flex:1;height:40px;font-size:13px;">Day before</button>
+              <button class="btn btn-outline" style="flex:1;height:40px;font-size:13px;">3 hrs before</button>
+            </div>
+          </div>
+          <button class="btn btn-outline" onclick="show('s12')">View saved events</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 15: NOTIFICATIONS ======= -->
+    <div class="screen" id="s15">
+      <div class="sc-body" style="padding:16px 20px 88px;">
+        <div style="font-size:22px;font-weight:800;color:var(--dark);margin-bottom:20px;margin-top:6px;">Notifications</div>
+        <div onclick="show('s16')" style="display:flex;gap:12px;padding:14px 0;border-bottom:0.5px solid #F0EEE8;cursor:pointer;align-items:flex-start;">
+          <div style="width:44px;height:44px;background:var(--amber-bg);border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;">⚡</div>
+          <div style="flex:1;"><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:14px;font-weight:700;color:var(--dark);">Saved event tomorrow</span><span style="font-size:11px;color:var(--muted);">2h ago</span></div><div style="font-size:13px;color:var(--muted);line-height:1.5;">Foam Party @ Exchange LA is tomorrow at 10pm. Cost card ready.</div></div>
+        </div>
+        <div onclick="show('s16')" style="display:flex;gap:12px;padding:14px 0;border-bottom:0.5px solid #F0EEE8;cursor:pointer;align-items:flex-start;">
+          <div style="width:44px;height:44px;background:var(--blue-bg);border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;">🔍</div>
+          <div style="flex:1;"><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:14px;font-weight:700;color:var(--dark);">New event match</span><span style="font-size:11px;color:var(--muted);">5h ago</span></div><div style="font-size:13px;color:var(--muted);line-height:1.5;">2 new events under $30 near DTLA match your filters.</div></div>
+        </div>
+        <div onclick="show('s16')" style="display:flex;gap:12px;padding:14px 0;border-bottom:0.5px solid #F0EEE8;cursor:pointer;align-items:flex-start;">
+          <div style="width:44px;height:44px;background:var(--red-bg);border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;">⬆</div>
+          <div style="flex:1;"><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:14px;font-weight:700;color:var(--dark);">Surge alert</span><span style="font-size:11px;color:var(--muted);">1d ago</span></div><div style="font-size:13px;color:var(--muted);line-height:1.5;">Post-event Uber surge predicted for 2am in DTLA this Saturday.</div></div>
+        </div>
+        <div onclick="show('s16')" style="display:flex;gap:12px;padding:14px 0;cursor:pointer;align-items:flex-start;">
+          <div style="width:44px;height:44px;background:var(--green-bg);border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;">♡</div>
+          <div style="flex:1;"><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:14px;font-weight:700;color:var(--dark);">Reminder set</span><span style="font-size:11px;color:var(--muted);">2d ago</span></div><div style="font-size:13px;color:var(--muted);line-height:1.5;">R&amp;B Night Leimert Park is in 3 days. Outfit: Casual.</div></div>
+        </div>
+      </div>
+      <div class="bnav">
+        <div class="nt" onclick="show('s4')"><span class="ni">⊞</span><span class="nl">Home</span></div>
+        <div class="nt" onclick="show('s6')"><span class="ni">◈</span><span class="nl">Explore</span></div>
+        <div class="nt" onclick="show('s12')"><span class="ni">♡</span><span class="nl">Saved</span></div>
+        <div class="nt on"><span class="ni">🔔</span><span class="nl">Alerts</span></div>
+        <div class="nt" onclick="show('s18')"><span class="ni">◉</span><span class="nl">Profile</span></div>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 16: NOTIFICATION DETAIL ======= -->
+    <div class="screen" id="s16">
+      <div class="sc-body" style="padding:0 20px 32px;">
+        <div class="back" onclick="show('s15')"><span class="back-arrow">‹</span>Notifications</div>
+        <div style="background:var(--amber-bg);border-radius:14px;padding:14px;margin-top:14px;margin-bottom:20px;display:flex;gap:12px;align-items:center;">
+          <span style="font-size:24px;">⚡</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--amber-text);">Saved event tomorrow</div><div style="font-size:11px;color:var(--amber-text);opacity:0.7;margin-top:2px;">Sent 2 hours ago</div></div>
+        </div>
+        <div style="font-size:22px;font-weight:800;color:var(--dark);margin-bottom:4px;letter-spacing:-0.5px;">Foam Party @ Exchange LA</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Tomorrow · Sat Jun 14, 10pm · Exchange LA, DTLA</div>
+        <div class="card" style="margin-bottom:12px;">
+          <div class="slabel">Cost summary</div>
+          <div class="row"><span class="rl">Ticket</span><span class="rv">$25.00</span></div>
+          <div class="row"><span class="rl">Best transport</span><span class="rv">Metro $2.50</span></div>
+          <div class="row"><span class="rl">Drinks est.</span><span class="rv">$15–20</span></div>
+          <div style="height:0.5px;background:var(--border);margin:10px 0;"></div>
+          <div style="display:flex;justify-content:space-between;"><span style="font-size:15px;font-weight:700;">Total</span><span style="font-size:18px;font-weight:800;">$42–$47</span></div>
+        </div>
+        <div style="background:var(--amber-bg);border-radius:12px;padding:12px 16px;margin-bottom:20px;">
+          <span style="font-size:13px;color:var(--amber-text);font-weight:600;">⚠ Dress code: White clothing — confirm your outfit tonight</span>
+        </div>
+        <button class="btn btn-dark" onclick="show('s8')" style="margin-bottom:10px;">View full event card</button>
+        <button class="btn btn-outline">Set transport reminder</button>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 17: CHECKLIST ======= -->
+    <div class="screen" id="s17">
+      <div class="sc-body" style="padding:16px 20px 32px;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;margin-top:6px;">Tonight</div>
+        <div style="font-size:22px;font-weight:800;color:var(--dark);margin-bottom:4px;letter-spacing:-0.5px;">Pre-event checklist</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Foam Party · 10pm · Exchange LA</div>
+        <div class="card" style="margin-bottom:14px;">
+          <div style="font-size:12px;font-weight:700;color:var(--green-text);margin-bottom:12px;">4 of 5 ready ✓</div>
+          <div class="check-item"><div class="check-circle done"><span style="font-size:11px;color:white;font-weight:700;">✓</span></div><span class="check-text done">White outfit picked out</span></div>
+          <div class="check-item"><div class="check-circle done"><span style="font-size:11px;color:white;font-weight:700;">✓</span></div><span class="check-text done">Waterproof phone case</span></div>
+          <div class="check-item"><div class="check-circle done"><span style="font-size:11px;color:white;font-weight:700;">✓</span></div><span class="check-text done">Valid ID</span></div>
+          <div class="check-item"><div class="check-circle done"><span style="font-size:11px;color:white;font-weight:700;">✓</span></div><span class="check-text done">Card (no cash needed)</span></div>
+          <div class="check-item" style="border-bottom:none;"><div class="check-circle todo"></div><span class="check-text todo">Leave by 9:30pm for Metro</span></div>
+        </div>
+        <div style="background:var(--blue-bg);border-radius:14px;padding:16px;margin-bottom:20px;">
+          <div style="font-size:12px;font-weight:700;color:var(--blue-text);margin-bottom:6px;">🚇 Transport reminder</div>
+          <div style="font-size:13px;color:var(--blue-text);margin-bottom:10px;">Metro Line E · Depart 9:32pm from 7th/Metro</div>
+          <div style="background:white;border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;">
+            <span style="font-size:13px;font-weight:600;color:var(--dark);">$2.50</span>
+            <span style="font-size:13px;font-weight:600;color:var(--dark);">Arrives 9:55pm</span>
+          </div>
+        </div>
+        <button class="btn btn-dark" onclick="show('s4')">I'm ready — let's go 🎉</button>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 18: PROFILE ======= -->
+    <div class="screen" id="s18">
+      <div class="sc-body" style="padding:16px 20px 88px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;margin-top:6px;">
+          <div style="font-size:22px;font-weight:800;color:var(--dark);letter-spacing:-0.5px;">Profile</div>
+          <div onclick="show('s19')" style="border:0.5px solid var(--border);border-radius:10px;padding:7px 16px;font-size:13px;cursor:pointer;font-weight:500;color:var(--dark);">Settings</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
+          <div class="avatar" style="width:64px;height:64px;background:var(--dark);color:var(--light);font-size:20px;font-weight:800;">FR</div>
+          <div>
+            <div style="font-size:18px;font-weight:800;color:var(--dark);">Fabian Rivera</div>
+            <div style="font-size:13px;color:var(--muted);">DTLA · Member since 2025</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px;">
+          <div style="background:#F0EEE8;border-radius:12px;padding:14px;text-align:center;"><div style="font-size:24px;font-weight:800;color:var(--dark);">3</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">Saved</div></div>
+          <div style="background:#F0EEE8;border-radius:12px;padding:14px;text-align:center;"><div style="font-size:24px;font-weight:800;color:var(--dark);">1</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">Attended</div></div>
+          <div style="background:#F0EEE8;border-radius:12px;padding:14px;text-align:center;"><div style="font-size:24px;font-weight:800;color:var(--dark);">$42</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">Avg spend</div></div>
+        </div>
+        <div class="slabel">Preferences</div>
+        <div class="card" style="padding:4px 16px;">
+          <div class="row"><span class="rl">Budget range</span><span style="font-size:12px;color:var(--muted);">Under $40 / night ›</span></div>
+          <div class="row"><span class="rl">Home neighborhood</span><span style="font-size:12px;color:var(--muted);">DTLA ›</span></div>
+          <div class="row"><span class="rl">Transport preference</span><span style="font-size:12px;color:var(--muted);">Metro first ›</span></div>
+          <div class="row"><span class="rl">Event vibes</span><span style="font-size:12px;color:var(--muted);">Music, Themed ›</span></div>
+          <div class="row"><span class="rl">Notifications</span><span style="font-size:12px;color:var(--green-text);font-weight:600;">On</span></div>
+        </div>
+      </div>
+      <div class="bnav">
+        <div class="nt" onclick="show('s4')"><span class="ni">⊞</span><span class="nl">Home</span></div>
+        <div class="nt" onclick="show('s6')"><span class="ni">◈</span><span class="nl">Explore</span></div>
+        <div class="nt" onclick="show('s12')"><span class="ni">♡</span><span class="nl">Saved</span></div>
+        <div class="nt" onclick="show('s15')"><span class="ni">🔔</span><span class="nl">Alerts</span></div>
+        <div class="nt on"><span class="ni">◉</span><span class="nl">Profile</span></div>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 19: SETTINGS ======= -->
+    <div class="screen" id="s19">
+      <div class="sc-body" style="padding:0 20px 32px;">
+        <div class="back" onclick="show('s18')"><span class="back-arrow">‹</span>Profile</div>
+        <div style="font-size:22px;font-weight:800;color:var(--dark);margin-top:14px;margin-bottom:24px;letter-spacing:-0.5px;">Settings</div>
+        <div class="card" style="padding:4px 16px;margin-bottom:16px;">
+          <div class="row"><div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--dark);">Notifications</div><div style="font-size:12px;color:var(--muted);">Reminders, alerts, surge warnings</div></div><div class="toggle on"><div class="toggle-thumb"></div></div></div>
+          <div class="row"><div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--dark);">Location access</div><div style="font-size:12px;color:var(--muted);">Required for transport costs</div></div><div class="toggle on"><div class="toggle-thumb"></div></div></div>
+          <div class="row"><div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--dark);">Budget on profile</div><div style="font-size:12px;color:var(--muted);">Show your budget range</div></div><div class="toggle on"><div class="toggle-thumb"></div></div></div>
+          <div class="row"><div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--dark);">Push notifications</div><div style="font-size:12px;color:var(--muted);">Enable in iOS settings</div></div><div class="toggle off"><div class="toggle-thumb"></div></div></div>
+        </div>
+        <div class="card" style="padding:4px 16px;margin-bottom:20px;">
+          <div class="row" style="cursor:pointer;"><span style="font-size:14px;font-weight:500;color:var(--dark);">Privacy policy</span><span style="color:var(--muted);">›</span></div>
+          <div class="row" style="cursor:pointer;"><span style="font-size:14px;font-weight:500;color:var(--dark);">Terms of service</span><span style="color:var(--muted);">›</span></div>
+          <div class="row" style="cursor:pointer;"><span style="font-size:14px;font-weight:500;color:var(--dark);">Help &amp; feedback</span><span style="color:var(--muted);">›</span></div>
+          <div class="row" style="cursor:pointer;"><span style="font-size:14px;font-weight:500;color:var(--dark);">About Sidequest</span><span style="color:var(--muted);">›</span></div>
+        </div>
+        <button class="btn" style="background:var(--red-bg);color:var(--red-text);border:0.5px solid #F7C1C1;height:48px;font-size:14px;font-weight:600;border-radius:14px;">Log out</button>
+      </div>
+    </div>
+
+    <!-- ======= SCREEN 20: POST-EVENT ======= -->
+    <div class="screen" id="s20">
+      <div class="sc-body" style="padding:20px 20px 40px;">
+        <div style="background:var(--green-bg);border-radius:14px;padding:14px 16px;margin-bottom:24px;display:flex;align-items:center;gap:12px;">
+          <span style="font-size:24px;">🎉</span>
+          <div><div style="font-size:14px;font-weight:700;color:var(--green-text);">Night complete!</div><div style="font-size:12px;color:var(--green-text);opacity:0.8;margin-top:2px;">How was Foam Party @ Exchange LA?</div></div>
+        </div>
+        <div style="text-align:center;margin-bottom:28px;">
+          <div class="stars" style="justify-content:center;margin-bottom:8px;">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star off">★</span>
+          </div>
+          <div style="font-size:13px;color:var(--muted);">How was it overall?</div>
+        </div>
+        <div style="font-size:16px;font-weight:700;color:var(--dark);margin-bottom:4px;">What did you actually spend?</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">Help the community with real cost data</div>
+        <div class="card" style="padding:4px 16px;margin-bottom:14px;">
+          <div class="row"><span class="rl">Ticket</span><div style="background:#F0EEE8;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--dark);">$25.00</div></div>
+          <div class="row"><span class="rl">Transport</span><div style="background:#F0EEE8;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--dark);">$2.50</div></div>
+          <div class="row"><span class="rl">Drinks</span><div style="background:#F0EEE8;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--dark);">$28.00</div></div>
+          <div class="row"><span class="rl">Other</span><div style="background:#F0EEE8;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--dark);">$0</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;margin-bottom:16px;">
+          <span style="font-size:16px;font-weight:700;color:var(--dark);">Total actual</span>
+          <span style="font-size:24px;font-weight:800;color:var(--dark);">$55.50</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:#F0EEE8;border-radius:12px;padding:14px 16px;margin-bottom:20px;">
+          <div><div style="font-size:13px;font-weight:600;color:var(--dark);">Share with community</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">Helps others plan better</div></div>
+          <div class="toggle on"><div class="toggle-thumb"></div></div>
+        </div>
+        <button class="btn btn-dark" onclick="show('s4')">Submit &amp; find next event →</button>
+      </div>
+    </div>
+
+  </div><!-- end screen-wrap -->
+</div><!-- end phone -->
+
+<!-- Screen nav strip -->
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:24px;max-width:390px;justify-content:center;">
+  <div style="width:100%;text-align:center;font-size:10px;color:#666;font-family:var(--f);font-weight:500;margin-bottom:4px;letter-spacing:0.5px;">JUMP TO SCREEN</div>
+  <script>
+    const labels={s1:'1 Splash',s2:'2 Location',s3:'3 Budget',s4:'4 Feed',s5:'5 Filtered',s6:'6 Categories',s7:'7 Empty',s8:'8 Card ★',s9:'9 Transport',s10:'10 Bring',s11:'11 Loading',s12:'12 Saved',s13:'13 Share',s14:'14 Confirm',s15:'15 Notifs',s16:'16 Notif detail',s17:'17 Checklist',s18:'18 Profile',s19:'19 Settings',s20:'20 Post-event'};
+    for(const[id,label] of Object.entries(labels)){
+      document.write(`<button onclick="show('${id}')" style="background:#3A3A38;color:#ccc;border:none;border-radius:6px;padding:5px 10px;font-size:10px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-weight:500;">${label}</button>`);
+    }
+  </script>
+</div>
+
+<script>
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const sc=document.getElementById(id);
+  if(sc){
+    sc.classList.add('active');
+    const body=sc.querySelector('.sc-body');
+    if(body)body.scrollTop=0;
+  }
+  // Status bar color
+  const darkScreens=['s1'];
+  const isDark=darkScreens.includes(id);
+  document.getElementById('status-light').style.display=isDark?'none':'flex';
+  document.getElementById('status-dark').style.display=isDark?'flex':'none';
+}
+</script>
+</body>
+</html>
